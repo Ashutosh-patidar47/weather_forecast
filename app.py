@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import requests
 import smtplib
@@ -107,3 +108,4 @@ if st.button("Get Forecast"):
                     st.error(f"❌ Failed to send email: {status}")
         else:
             st.error("City not found. Please try again.")
+
