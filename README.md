@@ -3,7 +3,10 @@
 
 TO use this project do following step
 
-1- download all the files 
-2- install all the requirements 
-3- In app.py file in line 75 and line 76 add your email and app password
-4- save it and run the streamlit file in terminal=" Streamlit run app.py
+1- download all the files.
+
+2- install all the requirements "pip install -r requirements.txt".
+
+3- In app.py file in line 75 and line 76 add your email and app password.
+
+4- save it and run the streamlit file in terminal=" Streamlit run app.py.
