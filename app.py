@@ -1,121 +1,109 @@
 import streamlit as st
-from weather import get_current_weather, get_daily_forecast, WeatherError
-from emailer import render_html, send_email
+import requests
+import smtplib
+from datetime import datetime
 
-# Page config
-st.set_page_config(page_title="Weather Email Service", page_icon="🌤️", layout="centered")
-
-# Custom CSS with premium color scheme
-st.markdown("""
-    <style>
-        body {
-            background-color: #0d1117;
-            color: #e5e5e5;
-        }
-        .title {
-            font-size: 30px;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-        .subtitle {
-            font-size: 22px;
-            font-weight: 600;
-            margin-top: 25px;
-            margin-bottom: 10px;
-        }
-        .weather-box {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            color: #f8fafc;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .forecast-card {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-radius: 15px;
-            padding: 18px;
-            margin-bottom: 20px;
-            color: #f8fafc;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            transition: transform 0.2s ease-in-out;
-        }
-        .forecast-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-        }
-        .forecast-date {
-            font-weight: 700;
-            font-size: 18px;
-            color: #38bdf8;  /* sky blue */
-            margin-bottom: 8px;
-        }
-        .forecast-condition {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-        .forecast-condition.sunny { color: #facc15; }   /* yellow */
-        .forecast-condition.rain { color: #3b82f6; }    /* blue */
-        .forecast-condition.cloud { color: #9ca3af; }   /* gray */
-        .forecast-temp {
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .forecast-temp span.max { color: #ef4444; }   /* red */
-        .forecast-temp span.min { color: #22d3ee; }   /* cyan */
-    </style>
-""", unsafe_allow_html=True)
-
-# App Title
-st.markdown("<h1 class='main-title'>🌤️ Weather Forecast Email Service</h1>", unsafe_allow_html=True)
-
-# Secrets (replace with your actual)
-OWM_KEY = "60d975cfef77aedca8bab27b843bafb6"
-SENDER = "your email id"
-PASSWORD = "generated app password"
+# -----------------------------------
+# 🔑 Load secrets from Streamlit Cloud
+# -----------------------------------
+OWM_KEY = st.secrets["WEATHER_API_KEY"]      # OpenWeatherMap API Key
+SENDER = st.secrets["EMAIL_ADDRESS"]         # Sender Email
+PASSWORD = st.secrets["EMAIL_PASSWORD"]      # Gmail App Password
 SMTP = "smtp.gmail.com"
 PORT = 587
 
-# Input form
-with st.form("weather_form"):
-    city = st.text_input("🏙️ Enter City", placeholder="e.g. London")
-    email = st.text_input("📧 Enter Email", placeholder="e.g. user@example.com")
-    submitted = st.form_submit_button("Get Forecast & Send Email")
+# -----------------------------------
+# 🌤️ Fetch weather from OpenWeatherMap
+# -----------------------------------
+def get_weather(city):
+    url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={OWM_KEY}&units=metric"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
 
-if submitted:
+# -----------------------------------
+# 📩 Send weather report via email
+# -----------------------------------
+def send_email(receiver, subject, body):
     try:
-        # Get weather
-        current = get_current_weather(city, OWM_KEY)
-        forecast = get_daily_forecast(city, OWM_KEY, days=4)  # today + 3 days
-
-        # Current weather card
-        st.markdown(f"""
-        <div class="weather-card">
-            <h3>☀️ Current Weather in {current['city']}</h3>
-            <p><b>{current['temp']}°C</b> · {current['desc']}</p>
-            <p>💧 Humidity: {current['humidity']}% · 🌬️ Wind: {current['wind']} m/s</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Forecast cards
-        st.subheader("📅 3-Day Forecast")
-        for d in forecast:
-            st.markdown(f"""
-            <div class="weather-card">
-                <p class="forecast-date">{d['date']}</p>
-                <p>{d['desc']} | 🌡️ {d['min']}°C – {d['max']}°C</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # Send email
-        html_body = render_html(current["city"], current, forecast)
-        text_body = f"Weather in {current['city']} Now: {current['temp']}°C · {current['desc']}"
-        send_email(email, f"Weather Forecast for {current['city']}", html_body, text_body, SENDER, PASSWORD, SMTP, PORT)
-
-        st.success(f"📩 Email sent successfully to {email}")
-
-    except WeatherError as we:
-        st.error(str(we))
+        with smtplib.SMTP(SMTP, PORT) as server:
+            server.starttls()
+            server.login(SENDER, PASSWORD)
+            message = f"Subject: {subject}\n\n{body}"
+            server.sendmail(SENDER, receiver, message)
+        return True
     except Exception as e:
-        st.error(f"Error: {e}")
+        return str(e)
+
+# -----------------------------------
+# 🎨 Streamlit UI
+# -----------------------------------
+st.set_page_config(page_title="Weather Forecast", page_icon="⛅", layout="centered")
+
+st.title("🌦 Weather Forecast App")
+st.write("Get the current weather and a 3-day forecast. Optionally receive the report by email.")
+
+city = st.text_input("🏙 Enter City Name:")
+email = st.text_input("📧 Enter Email (optional, to receive forecast):")
+
+if st.button("Get Forecast"):
+    if not city:
+        st.error("⚠️ Please enter a city name.")
+    else:
+        data = get_weather(city)
+
+        if data and "list" in data:
+            # ✅ Current weather
+            today = data["list"][0]
+            temp = today["main"]["temp"]
+            desc = today["weather"][0]["description"].title()
+            humidity = today["main"]["humidity"]
+            wind = today["wind"]["speed"]
+
+            st.subheader(f"🌞 Current Weather in {city.title()}")
+            st.write(f"**{temp}°C** • {desc}")
+            st.write(f"💧 Humidity: {humidity}% • 🌬 Wind: {wind} m/s")
+
+            # ✅ 3-day forecast
+            st.subheader("📅 3-Day Forecast")
+            forecast_data = {}
+            for item in data["list"]:
+                date = datetime.fromtimestamp(item["dt"]).strftime("%a, %d %b")
+                if date not in forecast_data:
+                    forecast_data[date] = {
+                        "temp_min": item["main"]["temp_min"],
+                        "temp_max": item["main"]["temp_max"],
+                        "condition": item["weather"][0]["description"].title()
+                    }
+
+            days = list(forecast_data.items())[:3]
+            for date, info in days:
+                st.markdown(f"""
+                    <div style="
+                        background-color:#1c1f26;
+                        border-radius:12px;
+                        padding:12px;
+                        margin-bottom:12px;
+                        box-shadow:0 4px 10px rgba(0,0,0,0.4);
+                        color:#f8fafc;">
+                        <b style="color:#38bdf8;">{date}</b><br>
+                        🌤 {info['condition']}<br>
+                        🌡 <span style="color:#ef4444;">Max: {info['temp_max']}°C</span> |
+                        <span style="color:#22d3ee;">Min: {info['temp_min']}°C</span>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            # ✅ Send email if email provided
+            if email:
+                report = f"Weather Report for {city}\n\nCurrent: {desc}, {temp}°C\nHumidity: {humidity}%\nWind: {wind} m/s\n\nForecast:\n"
+                for date, info in days:
+                    report += f"{date}: {info['condition']} ({info['temp_min']}°C - {info['temp_max']}°C)\n"
+
+                status = send_email(email, f"Weather Update for {city}", report)
+                if status is True:
+                    st.success("📩 Email Sent Successfully!")
+                else:
+                    st.error(f"❌ Failed to send email: {status}")
+        else:
+            st.error("City not found. Please try again.")
