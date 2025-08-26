@@ -3,6 +3,9 @@ import streamlit as st
 import requests
 import smtplib
 from datetime import datetime
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 
 # -----------------------------------
 # 🔑 Load secrets from Streamlit Cloud
@@ -111,6 +114,7 @@ if st.button("Get Forecast"):
                     st.error(f"❌ Failed to send email: {status}")
         else:
             st.error("City not found. Please try again.")
+
 
 
 
