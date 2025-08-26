@@ -7,9 +7,9 @@ from datetime import datetime
 # -----------------------------------
 # 🔑 Load secrets from Streamlit Cloud
 # -----------------------------------
-OWM_KEY = st.Secrets["WEATHER_API_KEY"]      # OpenWeatherMap API Key
-SENDER = st.Secrets["EMAIL_ADDRESS"]         # Sender Email
-PASSWORD = st.Secrets["EMAIL_PASSWORD"]      # Gmail App Password
+OWM_KEY = st.secrets["WEATHER_API_KEY"]      # OpenWeatherMap API Key
+SENDER = st.secrets["EMAIL_ADDRESS"]         # Sender Email
+PASSWORD = st.secrets["EMAIL_PASSWORD"]      # Gmail App Password
 SMTP = "smtp.gmail.com"
 PORT = 587
 
@@ -108,5 +108,6 @@ if st.button("Get Forecast"):
                     st.error(f"❌ Failed to send email: {status}")
         else:
             st.error("City not found. Please try again.")
+
 
 
