@@ -10,7 +10,7 @@ from email.mime.multipart import MIMEMultipart
 # -----------------------------------
 # 🔑 Load secrets from Streamlit Cloud
 # -----------------------------------
-WEATHER_API_KEY="60d975cfef77aedca8bab27b843bafb6"
+OWM_KEY="60d975cfef77aedca8bab27b843bafb6"
 EMAIL_ADDRESS="weatherforecast386@gmail.com"
 EMAIL_PASSWORD="wemgsufmpvoucjji"
 SMTP = "smtp.gmail.com"
@@ -111,6 +111,7 @@ if st.button("Get Forecast"):
                     st.error(f"❌ Failed to send email: {status}")
         else:
             st.error("City not found. Please try again.")
+
 
 
 
