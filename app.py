@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 # -----------------------------------
 OWM_KEY="60d975cfef77aedca8bab27b843bafb6"
 SENDER="weatherforecast386@gmail.com"
-PASSWORD="wemgsufmpvoucjji"
+PASSWORD=""
 SMTP = "smtp.gmail.com"
 PORT = 587
 
@@ -111,6 +111,7 @@ if st.button("Get Forecast"):
                     st.error(f"❌ Failed to send email: {status}")
         else:
             st.error("City not found. Please try again.")
+
 
 
 
